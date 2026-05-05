@@ -31,6 +31,7 @@ data is sourced from Kaggle and lands in a local **Data Lake**; **Apache Airflow
 
 ## 🔄 Data Pipeline – Medallion Architecture
 
+
 The entire ETL process is automated by an Airflow DAG (`ETL_Pipeline`) and consists of three stages:
 
 ### Bronze Layer – Raw Data Ingestion
@@ -47,6 +48,7 @@ Performed with **Python (Pandas)** inside Airflow tasks:
 The result is a single, clean table: `silver.us_flights_clean`.
 
 ### Gold Layer – Dimensional Model
+![Star Schema](star_schema_data_warehouse.png)
 - The clean data is modelled as a **Star Schema**:
   - **Fact table:** `Fact_flights` (departure/arrival delays, flight duration, distance type…)
   - **Dimension tables:**
@@ -108,13 +110,35 @@ In addition to descriptive analytics, we built several **ML/DL models** to predi
 | Category | Tools |
 |----------|-------|
 | **Orchestration** | Apache Airflow |
-| **Database** | PostgreSQL 15 (Docker) |
-| **Data Processing** | Python (Pandas, NumPy, psycopg2) |
-| **Data Storage** | Backblaze B2 (cloud), local Parquet/CSV |
+| **Database** | PostgreSQL (Docker) |
+| **Data Processing** | Python (Pandas, NumPy) |
+| **Data Storage** | Backblaze B2 (cloud), local Parquet/CSV|
 | **SQL Client** | DBeaver |
-| **BI & Dashboard** | Looker Studio |
+| **BI & Dashboard** | Looker Studio, PowerBI |
 | **Machine Learning** | Scikit‑learn, LightGBM, XGBoost, CatBoost |
 | **Deep Learning** | PyTorch |
 | **Infrastructure** | Docker, Docker Compose |
 
-## 📁 Repository Structure
+## 📁 Project Structure
+
+```bash
+.
+├── ETL_pipeline/              # Airflow DAG, Python ETL scripts, SQL DDL, docker-compose
+│   ├── airflow/
+│   ├── etl_pipeline/
+│   │   ├── bronze_layer/
+│   │   ├── silver_layer/
+│   │   └── gold_layer/
+│   ├── SQL/
+│   ├── docker-compose.yaml
+│   └── requirements.txt
+├── Data Mining Project/      # Jupyter notebooks for EDA, preprocessing, ML/DL
+│   ├── EDA/
+│   ├── Preprocessing/
+│   ├── Machine Learning/
+│   └── Deep Learning/
+├── Report/                   # Full academic report (PDF)
+├── star_schema_data_warehouse.png
+├── image.png                 # Project architecture diagram
+└── README.md
+
