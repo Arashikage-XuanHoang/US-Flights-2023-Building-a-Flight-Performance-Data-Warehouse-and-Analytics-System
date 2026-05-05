@@ -142,3 +142,15 @@ In addition to descriptive analytics, we built several **ML/DL models** to predi
 ├── image.png                 # Project architecture diagram
 └── README.md
 
+```
+
+## 👥 Team
+
+| Name | Student ID |
+|------|-----------|
+| Nguyễn Huỳnh Minh Phú | 23521183 |
+| Hà Xuân Hoàng | 23520516 |
+
+**University:** University of Information Technology – VNU-HCM  
+**Course:** Data Warehousing and OLAP (IS217.Q11)
+
