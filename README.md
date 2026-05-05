@@ -1,119 +1,120 @@
 # US Flights 2023 – Data Warehouse & Analytics System
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
-[![PostgreSQL 15](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
-[![Airflow 3.1.3](https://img.shields.io/badge/Airflow-3.1.3-green.svg)](https://airflow.apache.org/)
-[![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](https://www.docker.com/)
-
-![Star Schema](star_schema_data_warehouse.png)
+[![Python](https://img.shields.io/badge/Python-3.10-blue)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)](https://www.postgresql.org/)
+[![Airflow](https://img.shields.io/badge/Airflow-3.1.3-green)](https://airflow.apache.org/)
+[![Docker](https://img.shields.io/badge/Docker-✓-blue)](https://www.docker.com/)
+[![Looker Studio](https://img.shields.io/badge/Looker_Studio-✓-blue)](https://lookerstudio.google.com/)
 
 ## 📌 Overview
 
-This project builds a **complete analytical system** for domestic US flights in 2023, from raw CSV data to interactive dashboards and delay prediction models.
+This project delivers an **end-to-end analytical platform for U.S. domestic flights in 2023**.  
+Starting from raw Kaggle datasets, we build an automated data pipeline, a dimensional data warehouse in PostgreSQL, and a final reporting layer in **Looker Studio**, with an additional machine‑learning extension that predicts departure delays.
 
-The pipeline follows a **Medallion Architecture** (Bronze → Silver → Gold) implemented on **PostgreSQL**, orchestrated by **Apache Airflow**.  
-All analytical queries are written in **SQL** and executed directly against the Gold layer using **DBeaver**. Results are exported as CSV files, uploaded to **Backblaze B2** cloud storage, and finally visualized in **Power BI** and **Looker Studio**.
+The pipeline is orchestrated by **Apache Airflow** and follows a **Medallion Architecture** (Bronze → Silver → Gold) to guarantee data quality and traceability. All analytical queries are written in **SQL**, executed directly against the Gold layer via **DBeaver**, and their results are uploaded to **Backblaze B2** cloud storage before being visualised in Looker Studio.
 
-The project also includes a **Machine Learning** component that predicts flight departure delays using multiple models, with **LightGBM** achieving the best performance.
+On the predictive side, **11 machine learning and deep learning models** were trained and evaluated; **LightGBM** achieved the best balance between precision and recall (F1‑score **0.721**, ROC‑AUC **0.729**).
 
 ## 🧱 Architecture
 
+![Data Architecture](image.png)
 
+The diagram above illustrates the complete flow:  
+data is sourced from Kaggle and lands in a local **Data Lake**; **Apache Airflow** orchestrates the movement into **PostgreSQL** (Bronze → Silver → Gold); analysts write **SQL queries** via **DBeaver**; results are exported to **Backblaze B2** and finally visualised in **Looker Studio**.
 
-- **Data source:** [Kaggle: 2023 US Civil Flights, delays, meteo and aircraft](https://www.kaggle.com/datasets/bordanova/2023-us-civil-flights-delay-meteo-and-aircraft)
-- **Data warehouse:** PostgreSQL 15 inside a Docker container
-- **Orchestration:** Apache Airflow (local installation)
-- **Database client:** DBeaver for SQL queries
-- **Cloud storage:** Backblaze B2 (S3-compatible)
-- **BI tools:** Microsoft Power BI, Google Looker Studio
-- **ML framework:** Scikit-learn, PyTorch, LightGBM, XGBoost, CatBoost
+- **Data source:** [2023 US Civil Flights, delays, meteo and aircraft](https://www.kaggle.com/datasets/bordanova/2023-us-civil-flights-delay-meteo-and-aircraft)
+- **Warehouse:** PostgreSQL 15 (Docker)
+- **Orchestration:** Apache Airflow
+- **SQL client:** DBeaver
+- **Cloud storage:** Backblaze B2 (S3‑compatible)
+- **BI & Dashboarding:** Looker Studio
 
-## 🔄 Data Pipeline (Medallion Architecture)
+## 🔄 Data Pipeline – Medallion Architecture
 
-### 1. Bronze Layer (Raw Data Ingestion)
-- 5 CSV files from Kaggle are loaded **as-is** into schema `bronze`.
-- No transformations are applied – this layer guarantees data lineage and reproducibility.
+The entire ETL process is automated by an Airflow DAG (`ETL_Pipeline`) and consists of three stages:
 
-### 2. Silver Layer (Cleaning & Integration)
-Performed with **Python (Pandas)** via Airflow tasks:
-- Drop rows with NULL values
-- Standardize data types (e.g., convert date columns to `DATE`)
-- Remove duplicate records
-- Merge `US_flights_2023` with `airports_geolocation` and other auxiliary tables
+### Bronze Layer – Raw Data Ingestion
+- All CSV files from Kaggle are loaded **without any transformation** into the `bronze` schema.
+- This preserves the original data and allows full lineage tracking.
 
-The result is a single clean table: `silver.us_flights_clean`.
+### Silver Layer – Cleaning & Integration
+Performed with **Python (Pandas)** inside Airflow tasks:
+- Removal of NULL values
+- Data type standardisation (e.g., date columns to `DATE`)
+- Deduplication
+- Merging of `US_flights_2023` with `airports_geolocation` and weather data
 
-### 3. Gold Layer (Star Schema)
-- Data is modeled into a **Star Schema** optimized for analytical queries:
-  - **Fact table:** `Fact_flights` – departure delay, arrival delay, flight duration, etc.
+The result is a single, clean table: `silver.us_flights_clean`.
+
+### Gold Layer – Dimensional Model
+- The clean data is modelled as a **Star Schema**:
+  - **Fact table:** `Fact_flights` (departure/arrival delays, flight duration, distance type…)
   - **Dimension tables:**
     - `Dim_Date`
     - `Dim_Airline`
-    - `Dim_Airport`
+    - `Dim_Airport` (used for both departure and arrival)
     - `Dim_Plane`
-- All dimension keys are linked to the fact table via foreign keys.
-- This layer is loaded using **SQL stored procedures** called by Airflow.
+- Dimensions are linked to the fact table via foreign keys.
+- Loading is done via **SQL scripts** that Airflow executes, ensuring idempotency (`ON CONFLICT DO NOTHING`).
 
-## 📊 Reporting & Visualization Workflow
+## 📊 Reporting and Visualisation
 
-The project deliberately avoids heavyweight OLAP servers like SSAS. Instead, we use a straightforward and modern approach:
+Instead of a heavy OLAP server (SSAS, Atoti, etc.), we adopt a **simple, SQL‑centric workflow**:
 
-1. **SQL queries** written and run in **DBeaver** directly against the Gold layer.
-2. Query results are **exported as CSV files**.
-3. CSV files are **uploaded to Backblaze B2** (a low-cost, S3-compatible cloud storage).
-4. Files are downloaded locally and **imported into Power BI** and **Looker Studio**.
-5. Interactive dashboards are built to explore:
-   - Top 10 airports by average departure delay
-   - Average delay by day of week and airline
-   - Flight count by distance type and state
-   - And many more (20+ pre-defined analyses)
+1. **Write SQL queries** on the Gold layer using **DBeaver**.
+2. **Export** query results as CSV files.
+3. **Upload** CSVs to **Backblaze B2** using a dedicated Python script.
+4. **Import** the files into **Looker Studio** to build interactive dashboards.
+
+Dashboards answer questions such as:
+- Top‑10 airports with the highest average departure delay
+- Average arrival delay by day of the week
+- Flight counts per distance type, per state and city
+- Carrier performance across weekdays
+- And many more (20+ analytical queries)
 
 ## 🤖 Machine Learning – Departure Delay Prediction
 
-Beyond descriptive analytics, we built several ML/DL models to predict whether a flight will be delayed (binary classification).
+In addition to descriptive analytics, we built several **ML/DL models** to predict whether a flight departs late (binary classification).
 
-- **Target variable:** `Dep_Delay_Tag` (1 = delayed, 0 = not delayed)
-- **Features:** weather data, aircraft age, time features, airline, route, etc.
-- **Data split:** 60% train, 20% dev, 20% test
-- **Models trained:**
-  - *Machine Learning:* Logistic Regression (from scratch & Scikit-learn), HistGradientBoosting, AdaBoost, XGBoost, LightGBM, CatBoost
-  - *Deep Learning:* MLP, Neural Network (PyTorch), GRU, LSTM, BiLSTM
+- **Target:** `Dep_Delay_Tag` (1 = delayed, 0 = not delayed)
+- **Features:** Weather variables, aircraft age, time‑based features (month, day, weekend), airline, geographic coordinates, etc.
+- **Split:** 60% train – 20% validation – 20% test
 
-| Model | Accuracy | F1-Score | ROC-AUC |
+**Models evaluated:**
+- Logistic Regression (from scratch and Scikit‑learn)
+- HistGradientBoosting
+- AdaBoost
+- XGBoost
+- LightGBM
+- CatBoost
+- Multi‑Layer Perceptron (Scikit‑learn)
+- Neural Network, GRU, LSTM, BiLSTM (PyTorch)
+
+### Results on the test set
+
+| Model | Accuracy | F1‑Score | ROC‑AUC |
 |-------|----------|----------|---------|
 | **LightGBM** | 0.6935 | **0.7210** | **0.7292** |
 | CatBoost | 0.6928 | 0.7202 | 0.7248 |
 | XGBoost | **0.6981** | 0.7185 | 0.7215 |
-| MLP (Scikit-learn) | 0.6744 | 0.6889 | 0.6987 |
+| MLP (Scikit‑learn) | 0.6744 | 0.6889 | 0.6987 |
+| GRU (PyTorch) | 0.6610 | 0.6353 | 0.6893 |
 
-> **LightGBM** was selected as the final model due to its highest F1-score and ROC-AUC, providing the best balance between precision and recall.
+**LightGBM** was selected as the final model because it offers the **highest F1‑score and ROC‑AUC**, i.e. the best overall classification performance and discrimination ability.
 
-## 🚀 Setup & Usage
+## 🛠️ Technology Stack
 
-### Prerequisites
-- Docker Desktop
-- Python 3.10+
-- DBeaver (or any PostgreSQL client)
-- [Kaggle dataset](https://www.kaggle.com/datasets/bordanova/2023-us-civil-flights-delay-meteo-and-aircraft)
+| Category | Tools |
+|----------|-------|
+| **Orchestration** | Apache Airflow |
+| **Database** | PostgreSQL 15 (Docker) |
+| **Data Processing** | Python (Pandas, NumPy, psycopg2) |
+| **Data Storage** | Backblaze B2 (cloud), local Parquet/CSV |
+| **SQL Client** | DBeaver |
+| **BI & Dashboard** | Looker Studio |
+| **Machine Learning** | Scikit‑learn, LightGBM, XGBoost, CatBoost |
+| **Deep Learning** | PyTorch |
+| **Infrastructure** | Docker, Docker Compose |
 
-├── ETL_pipeline/
-│   ├── airflow/                     # Airflow DAGs and config
-│   ├── etl_pipeline/                # Python code for bronze/silver/gold
-│   │   ├── bronze_layer/
-│   │   ├── silver_layer/
-│   │   └── gold_layer/
-│   ├── SQL/                         # DDL scripts
-│   ├── docker-compose.yaml
-│   └── requirements.txt
-├── Data Mining Project/
-│   ├── EDA/                         # Exploratory Data Analysis notebooks
-│   ├── Preprocessing/               # Data cleaning & feature engineering
-│   ├── Kiểm định/                   # Hypothesis testing
-│   ├── Machine Learning/            # ML model scripts
-│   └── Deep Learning/               # DL model scripts (PyTorch)
-├── Report/                          # Full project report (PDF)
-├── star_schema_data_warehouse.png
-└── README.md
-
-
-
+## 📁 Repository Structure
