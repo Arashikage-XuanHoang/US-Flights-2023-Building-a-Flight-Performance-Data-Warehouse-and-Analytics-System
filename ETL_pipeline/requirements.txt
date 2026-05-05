@@ -1,0 +1,6 @@
+pandas==2.3.3
+psycopg2==2.9.11
+asyncpg==0.30.0
+apache-airflow-providers-postgres==6.4.1
+atoti==0.9.9
+atoti-client==0.9.9

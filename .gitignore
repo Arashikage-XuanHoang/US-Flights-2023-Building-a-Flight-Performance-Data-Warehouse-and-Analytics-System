@@ -1,0 +1,71 @@
+# =========================
+# 🔹 DATA FILES (rất quan trọng)
+# =========================
+*.csv
+*.parquet
+*.xlsx
+*.xls
+*.json
+
+# ignore toàn bộ thư mục data
+Data/
+Data Mining Project/Dataset/
+
+# nếu muốn giữ structure mà bỏ file bên trong:
+# Data/*
+
+# =========================
+# 🔹 PYTHON
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+
+# virtual environment
+venv/
+.env/
+.venv/
+
+# =========================
+# 🔹 JUPYTER
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# 🔹 AIRFLOW / LOGS
+# =========================
+logs/
+*.log
+
+# =========================
+# 🔹 DOCKER
+# =========================
+*.env
+.env
+
+# =========================
+# 🔹 SYSTEM FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# 🔹 IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# 🔹 LARGE FILES / EXPORTS
+# =========================
+*.zip
+*.tar
+*.gz
+
+# =========================
+# 🔹 MISC
+# =========================
+*.bak
+*.tmp
